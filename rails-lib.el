@@ -153,54 +153,6 @@ BlaPostfix -> Bla."
   (= (elt word 0)
      (elt (capitalize word) 0)))
 
-;;;;;;;; def-snips stuff ;;;;
-
-(defun snippet-abbrev-function-name (abbrev-table abbrev-name)
-  "Return the name of the snippet abbreviation function in the
-ABBREV-TABLE for the abbreviation ABBREV-NAME."
-  (intern (concat "snippet-abbrev-"
-      (snippet-strip-abbrev-table-suffix
-       (symbol-name abbrev-table))
-      "-"
-      abbrev-name)))
-
-(defun snippet-menu-description-variable (table name)
-  "Return a variable for the menu description of the snippet ABBREV-NAME in ABBREV-TABLE."
-  (intern
-   (concat
-    (symbol-name (snippet-abbrev-function-name table name))
-    "-menu-description")))
-
-(defmacro* def-snips ((&rest abbrev-tables) &rest snips)
-  "Generate snippets with menu documentaion in several ABBREV-TABLES.
-
-  (def-snip (some-mode-abbrev-table other-mode-abbrev-table)
-    (\"abbr\"   \"some snip $${foo}\" \"menu documentation\")
-    (\"anabr\"   \"other snip $${bar}\" \"menu documentation\")
-"
-  `(progn
-     ,@(loop for table in abbrev-tables
-             collect
-             `(snippet-with-abbrev-table ',table
-                                         ,@(loop for (name template desc) in snips collect
-                                                 `(,name . ,template)))
-             append
-             (loop for (name template desc) in snips collect
-                   `(setf ,(snippet-menu-description-variable table name)
-                          ,desc)))))
-
-(defun snippet-menu-description (abbrev-table name)
-  "Return the menu descripton for the snippet named NAME in
-ABBREV-TABLE."
-  (symbol-value (snippet-menu-description-variable abbrev-table name)))
-
-(defun snippet-menu-line (abbrev-table name)
-  "Generate a menu line for the snippet NAME in ABBREV-TABLE."
-  (cons
-   (concat name "\t" (snippet-menu-description abbrev-table name))
-   (lexical-let ((func-name (snippet-abbrev-function-name abbrev-table name)))
-     (lambda () (interactive) (funcall func-name)))))
-
 ;;; Define keys
 
 (defmacro define-keys (key-map &rest key-funcs)

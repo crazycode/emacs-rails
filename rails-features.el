@@ -27,8 +27,7 @@
 ;;; Code:
 
 (defvar rails-features:list
-  '(rails-snippets-feature
-    rails-speedbar-feature
+  '(rails-speedbar-feature
     rails-rspec-feature)
   "List of features")
 
