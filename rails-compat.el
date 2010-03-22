@@ -33,7 +33,8 @@
 (when (fboundp 'indent-and-complete)
   (message "WARNNING: the `indent-and-complete' already defined."))
 
-(defun indent-and-complete ()
+;; i will not use this function.
+(defun indent-and-complete-not-use ()
   "Indent line and Complete if point is at end of left a leave word."
   (interactive)
 

@@ -49,6 +49,7 @@
 
 (require 'inflections)
 
+(require 'string-ext)
 (require 'rails-compat)
 (require 'rails-project)
 
@@ -175,7 +176,8 @@ Emacs w3m browser."
 (defvar rails-secondary-switch-func nil)
 (defvar rails-required-lisp-eval-depth 1000) ; Specifies the minimum required value of max-lisp-eval-depth for rails mode to work
 
-(defcustom rails-indent-and-complete t
+;; NOT use emacs-rails's indent-and-complete, i use rinari to do it.
+(defcustom rails-indent-and-complete nil
   "Key to indent and complete."
   :group 'rails
   :type 'boolean)
@@ -277,10 +279,10 @@ Emacs w3m browser."
 (defun forward-ruby-object (n)
   (if (> 0 n)
       (when (search-backward-regexp "[^-a-zA-Z_#:*][-a-zA-Z_#:*]+" nil t (- n))
-	(forward-char)
-	(point))
+        (forward-char)
+        (point))
       (when (search-forward-regexp "[-a-zA-Z_#:*]+" nil t n)
-	(goto-char (match-end 0)))))
+        (goto-char (match-end 0)))))
 
 (defun rails-search-doc (&optional item)
   (interactive)
@@ -506,10 +508,10 @@ necessary."
             (modify-syntax-entry ?: "w" (syntax-table))
             (modify-syntax-entry ?_ "w" (syntax-table))
             ;(local-set-key (kbd "C-.") 'complete-tag)
-	    (if rails-indent-and-complete
-		(local-set-key (if rails-use-another-define-key
-				   (kbd "TAB") (kbd "<tab>"))
-			       'indent-and-complete))
+            (if rails-indent-and-complete
+                (local-set-key (if rails-use-another-define-key
+                                   (kbd "TAB") (kbd "<tab>"))
+                               'indent-and-complete))
             (local-set-key (rails-key "f") '(lambda()
                                               (interactive)
                                               (mouse-major-mode-menu (rails-core:menu-position))))
@@ -527,10 +529,10 @@ necessary."
             (rails-project:with-root
              (root)
              (progn
-	       (if rails-indent-and-complete
-		   (local-set-key (if rails-use-another-define-key
-				      (kbd "TAB") (kbd "<tab>"))
-				  'indent-and-complete))
+               (if rails-indent-and-complete
+                   (local-set-key (if rails-use-another-define-key
+                                      (kbd "TAB") (kbd "<tab>"))
+                                  'indent-and-complete))
                (rails-minor-mode t)
                (rails-apply-for-buffer-type)))))
 
