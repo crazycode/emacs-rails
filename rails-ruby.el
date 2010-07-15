@@ -178,21 +178,22 @@ See the variable `align-rules-list' for more details.")
   (let ((abuf (concat "*" buf "*")))
     (when (not (comint-check-proc abuf))
       (set-buffer (make-comint buf rails-ruby-command nil script params)))
+    (pop-to-buffer abuf)
     (if (fboundp 'inf-ruby-mode)
       (progn
         (inf-ruby-mode)
         (make-local-variable 'inf-ruby-first-prompt-pattern)
         (make-local-variable 'inf-ruby-prompt-pattern)
+        (make-local-variable 'inf-ruby-buffer)
         (setq inf-ruby-first-prompt-pattern "^>> "
-              inf-ruby-prompt-pattern "^>> ")
-        (pop-to-buffer abuf))
+              inf-ruby-prompt-pattern "^>> "
+              inf-ruby-buffer (current-buffer)))
       (progn
         (inferior-ruby-mode)
         (make-local-variable 'inferior-ruby-first-prompt-pattern)
         (make-local-variable 'inferior-ruby-prompt-pattern)
         (setq inferior-ruby-first-prompt-pattern "^>> "
-              inferior-ruby-prompt-pattern "^>> ")
-        (pop-to-buffer abuf)))))
+              inferior-ruby-prompt-pattern "^>> ")))))
 
 (defun complete-ruby-method (prefix &optional maxnum)
   (if (capital-word-p prefix)

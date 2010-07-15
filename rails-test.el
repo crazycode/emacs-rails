@@ -59,7 +59,7 @@
 (defun rails-test:line-regexp (&optional append prepend)
   (concat
    append
-    "\\[?\\([^ \f\n\r\t\v]+?\\):\\([0-9]+\\)\\(?::in\s*`\\(.*?\\)'\\)?"
+   "\\[?/?\\(\\(?:app\\|config\\|lib\\|test\\|spec\\|vendor\\)?/[^ \f\n\r\t\v]+?\\):\\([0-9]+\\)\\(?::in\s*`\\(.*?\\)'\\)?\\]?"
    prepend))
 
 (defun rails-test:error-regexp-alist ()
@@ -67,7 +67,7 @@
    (list 'rails-test-trace
          (rails-test:line-regexp) 1 2 nil 1)
    (list 'rails-test-error
-         (rails-test:line-regexp nil "\\(?:\]:\\|\n$\\)") 1 2 nil 2))) ; ending of "]:" or next line is blank
+         (rails-test:line-regexp nil "\\(?:\\]:\\|\n$\\)") 1 2 nil 2))) ; ending of "]:" or next line is blank
 
 (defun rails-test:print-result ()
   "Determine if the output buffer needs to be shown"

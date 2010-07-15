@@ -492,7 +492,9 @@ necessary."
   (set (make-local-variable 'ffip-project-root) (rails-project:root))
   (set (make-local-variable 'ffip-regexp)
        (concat ".*\\(" (rails-core:regex-for-match-view)
-               "\\|" (mapconcat #'car rails-auto-mode-alist "\\|") "\\)"))
+               "\\|" (mapconcat #'car rails-auto-mode-alist "\\|")
+               "\\|" (mapconcat (lambda (ext) (concat "\\." ext "$")) rails-refactoring-source-extensions "\\|")
+               "\\|\\.css$\\)"))
   (rails-features:install))
 
 ;; hooks
