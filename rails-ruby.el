@@ -173,11 +173,13 @@ See the variable `align-rules-list' for more details.")
 
 (require 'inf-ruby)
 
-(defun run-ruby-in-buffer (buf script &optional params)
+(defun run-ruby-in-buffer (buf script &rest params)
   "Run CMD as a ruby process in BUF if BUF does not exist."
   (let ((abuf (concat "*" buf "*")))
     (when (not (comint-check-proc abuf))
-      (set-buffer (make-comint buf rails-ruby-command nil script params)))
+      (set-buffer (apply 'make-comint buf rails-ruby-command
+                               nil
+                               script params)))
     (pop-to-buffer abuf)
     (if (fboundp 'inf-ruby-mode)
       (progn
