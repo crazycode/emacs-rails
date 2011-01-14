@@ -321,9 +321,12 @@ BUFFER-MAJOR-MODE and process-sentinel SENTINEL."
 *rails-<project-name>-<name>*."
   (rails-project:with-root
    (root)
-   (let ((buffer-name (format "rails-%s-%s" (rails-project:name) name))
-         (script (rails-core:file script)))
+   (let* ((buffer-name (format "rails-%s-%s" (rails-project:name) name))
+          (rails (rails-core:file "script/rails"))
+          (script-file (rails-core:file script))
+          (script (if (file-exists-p script-file) script-file script)))
      (run-ruby-in-buffer buffer-name
+                         rails
                          script
                          params)
      (setq ruby-buffer buffer-name))
@@ -342,7 +345,7 @@ BUFFER-MAJOR-MODE and process-sentinel SENTINEL."
         (when (fboundp 'inf-ruby-mode) (setq inf-ruby-buffer buffer))
         (switch-to-buffer-other-window buffer))
       (rails-script:run-interactive name
-                                    "script/console"
+                                    "console"
                                     environment))))
 
 (defun rails-script:breakpointer ()
