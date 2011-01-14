@@ -24,10 +24,12 @@
   "Return the test name based on point"
   (save-excursion
     (ruby-end-of-block)
-    (let ((should (when (search-backward-regexp "^[ ]*should \"\\([a-z0-9_ ]+\\)\"[ ]*do" nil t)
-                    (match-string-no-properties 1)))
-          (context (when (search-backward-regexp "^[ ]*context \"\\([a-z0-9_ ]+\\)\"[ ]*do" nil t)
-                     (match-string-no-properties 1))))
+    (let* ((name-regex "\\(\\(:[a-z0-9_]+\\)\\|\\(\"\\([a-z0-9_ ]+\\)\"\\)\\)")
+           (name-match (lambda () (or (match-string-no-properties 2) (match-string-no-properties 4))))
+           (should (when (search-backward-regexp (concat "^[ \t]*should +" name-regex "[ \t]+do") nil t)
+                     (funcall name-match)))
+           (context (when (search-backward-regexp (concat "^[ \t]*context +" name-regex "[ \t]+do") nil t)
+                      (funcall name-match))))
       (when (and should context)
         (concat context " should " should)))))
 

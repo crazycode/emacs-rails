@@ -66,8 +66,17 @@ For example -c to remove files from svn.")
   " \\(create\\) + \\([^ ]+\\.\\w+\\)")
 
 (defvar rails-script:output-mode-ret-value nil)
-(defvar rails-script:run-after-stop-hook nil)
-(defvar rails-script:show-buffer-hook nil)
+(defvar rails-script:after-hook-internal nil)
+
+(defcustom rails-script:after-hook '(rails-script:popup-buffer rails-script:push-first-button)
+  "Hooks ran after script ran."
+  :group 'rails
+  :type 'hook)
+
+(defcustom rails-script:show-buffer-hook nil
+  "Hooks ran when output buffer shown."
+  :group 'rails
+  :type 'hook)
 
 (defun rails-script:make-buttons (start end len)
   (save-excursion
@@ -130,8 +139,6 @@ For example -c to remove files from svn.")
   (buffer-disable-undo)
   (setq buffer-read-only t)
   (rails-script:make-buttons (point-min) (point-max) (point-max))
-  (add-hook 'rails-script:run-after-stop-hook 'rails-script:popup-buffer t t)
-  (add-hook 'rails-script:run-after-stop-hook 'rails-script:push-first-button t t)
   (add-hook 'after-change-functions 'rails-script:make-buttons nil t)
   (run-hooks 'rails-script:output-mode-hook))
 
@@ -157,7 +164,8 @@ For example -c to remove files from svn.")
             msg (format "%s was stopped (%s)." name ret-message)))
     (message (replace-regexp-in-string "\n" "" msg))
     (with-current-buffer buf
-      (run-hooks 'rails-script:run-after-stop-hook))))
+      (run-hooks 'rails-script:after-hook)
+      (run-hooks 'rails-script:after-hook-internal))))
 
 (defun rails-script:run (command parameters &optional buffer-major-mode mode-line-string)
   "Run a Rails script COMMAND with PARAMETERS with
@@ -178,19 +186,18 @@ BUFFER-MAJOR-MODE and process-sentinel SENTINEL."
          (with-current-buffer (get-buffer rails-script:buffer-name)
            (let ((buffer-read-only nil)
                  (win (get-buffer-window-list rails-script:buffer-name)))
-             (kill-region (point-min) (point-max)))
+             (erase-buffer))
            (if buffer-major-mode
                (apply buffer-major-mode (list))
              (rails-script:output-mode))
            (add-hook 'after-change-functions 'rails-cmd-proxy:convert-buffer-from-remote nil t))
          (set-process-coding-system proc 'utf-8-dos 'utf-8-dos)
          (set-process-sentinel proc 'rails-script:sentinel-proc)
-         (setq rails-script:running-script-name
-               (if (= 1 (length parameters))
-                   (format "%s %s" command (first parameters))
-                 (format "%s %s" (first parameters) (first (cdr parameters)))))
+         (setq rails-script:running-script-name (concat command
+                                                        " "
+                                                        (strings-join " " parameters)))
 	 (setq rails-ui:mode-line-script-name (or mode-line-string
-						  command))
+				a		  command))
          (message "Starting %s." rails-script:running-script-name))))))
 
 ;;;;;;;;;; Destroy stuff ;;;;;;;;;;
@@ -331,10 +338,12 @@ BUFFER-MAJOR-MODE and process-sentinel SENTINEL."
          (name (format "console at (%s)" environment))
 	 (buffer (get-buffer (format "*rails-%s-%s*" (rails-project:name) name))))
     (if buffer
-	(switch-to-buffer-other-window buffer)
-	(rails-script:run-interactive name
-				      "script/console"
-				      environment))))
+      (progn
+        (when (fboundp 'inf-ruby-mode) (setq inf-ruby-buffer buffer))
+        (switch-to-buffer-other-window buffer))
+      (rails-script:run-interactive name
+                                    "script/console"
+                                    environment))))
 
 (defun rails-script:breakpointer ()
   "Run script/breakpointer."

@@ -253,6 +253,8 @@
   ((rails-key "\C-c e")   'rails-script:generate)
   ((rails-key "\C-c x")   'rails-script:destroy)
   ((rails-key "\C-c s c") 'rails-script:console)
+  ((kbd "C-c C-s")        'rails-script:console)
+  ((kbd "C-c C-z")        'rails-script:console)
   ((rails-key "\C-c s b") 'rails-script:breakpointer)
   ((rails-key "\C-c s s") 'rails-run-sql)
   ((rails-key "\C-c w s") 'rails-ws:toggle-start-stop)

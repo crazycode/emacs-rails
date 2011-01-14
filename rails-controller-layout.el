@@ -166,12 +166,8 @@ If the action is nil, return all views for the controller."
                  (:unit-test (rails-core:unit-test-file mailer))
                  (:migration (rails-core:migration-file-by-model model)))))
     (if item
-        (let ((file (rails-core:file item)))
-          (if (file-exists-p file)
-              (progn
-                (find-file file)
-                (message (format "%s: %s" (substring (symbol-name type) 1) item)))
-            (message "File %s does not exist" file)))
+      (find-or-ask-to-create (format "%s does not exists do you want to create it? " item)
+                             (rails-core:file item))
       (message "%s not found" name))))
 
 (defun rails-controller-layout:switch-to-helper () (interactive) (rails-controller-layout:switch-to :helper))

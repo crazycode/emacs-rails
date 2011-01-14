@@ -184,7 +184,6 @@ See the variable `align-rules-list' for more details.")
         (inf-ruby-mode)
         (make-local-variable 'inf-ruby-first-prompt-pattern)
         (make-local-variable 'inf-ruby-prompt-pattern)
-        (make-local-variable 'inf-ruby-buffer)
         (setq inf-ruby-first-prompt-pattern "^>> "
               inf-ruby-prompt-pattern "^>> "
               inf-ruby-buffer (current-buffer)))

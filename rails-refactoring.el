@@ -171,7 +171,8 @@ returned by `perform-replace' per FILE."
                                            dirs))
                                 (rails-refactoring:source-files))
                  (rails-refactoring:source-files)))
-        (case-fold-search (and case-fold-search (string= from (downcase from)))))
+        (case-fold-search (and case-fold-search (string= from (downcase from))))
+        (original-buffer (current-buffer)))
     (while (and keep-going files)
       (let* ((file (car files))
              (flymake-start-syntax-check-on-find-file nil)
@@ -187,7 +188,8 @@ returned by `perform-replace' per FILE."
               (if sites
                 (push (cons file sites) result)
                 (setq keep-going nil))))
-          (unless existing-buffer (kill-buffer nil))))
+          (unless existing-buffer (kill-buffer nil)))
+        (set-buffer original-buffer))
       (setq files (cdr files)))
     (and keep-going result)))
 
@@ -347,19 +349,19 @@ the rest."
 
 (defvar rails-refactoring:after-rails-script-jobs nil
   "Queue of jobs to be ran via
-`rails-script:run-after-stop-hook'.  Jobs are ran by
+`rails-script:after-hook-internal'.  Jobs are ran by
 `rails-refactoring:run-after-rails-script-jobs' and dequeued when
 they return non nil.")
 
 (defun rails-refactoring:run-after-rails-script-jobs ()
-  "Run pending `rails-script:run-after-stop-hook' refactoring
+  "Run pending `rails-script:after-hook-internal' refactoring
 jobs"
   (setq rails-refactoring:after-rails-script-jobs
         (delete-if (lambda (spec)
                      (funcall (car spec) (cadr spec) (cddr spec)))
                    rails-refactoring:after-rails-script-jobs)))
 
-(add-hook 'rails-script:run-after-stop-hook 'rails-refactoring:run-after-rails-script-jobs)
+(add-hook 'rails-script:after-hook-internal 'rails-refactoring:run-after-rails-script-jobs)
 
 (defmacro rails-refactoring:enqueue-migration-edit (migration function &rest arguments)
   "Enqueue migration edit to be run when

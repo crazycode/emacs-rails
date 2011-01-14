@@ -69,28 +69,29 @@
    (list 'rails-test-error
          (rails-test:line-regexp nil "\\(?:\\]:\\|\n$\\)") 1 2 nil 2))) ; ending of "]:" or next line is blank
 
-(defun rails-test:print-result ()
-  "Determine if the output buffer needs to be shown"
-  (with-current-buffer (get-buffer rails-script:buffer-name)
-    (let ((msg (list))
-          (failures 0)
-          (errors 0))
+(defun rails-test:count-errors-failures ()
+  "Return the sum of errors and failures for a completed run."
+  (let ((failures 0)
+        (errors 0))
+    (with-current-buffer (get-buffer rails-script:buffer-name)
       (save-excursion
         (goto-char (point-min))
         (while (re-search-forward rails-test:result-regexp (point-max) t)
           (setq failures (+ failures (string-to-number (match-string 2))))
-          (setq errors (+ errors (string-to-number (match-string 3))))
-          (add-to-list 'msg (match-string-no-properties 1))))
-      (unless (zerop (length msg))
-        (message (strings-join " || " (reverse msg))))
-      (when (and (or (not (zerop rails-script:output-mode-ret-value))
-                     (not (zerop errors))
-                     (not (zerop failures)))
-                 (not (buffer-visible-p (current-buffer))))
-        (rails-script:popup-buffer))
-      (when (and (buffer-visible-p (current-buffer))
-                 (eq (point) (point-max)))
-        (set-window-start (get-buffer-window (current-buffer)) (point-min))))))
+          (setq errors (+ errors (string-to-number (match-string 3)))))))
+    (+ errors
+       failures)))
+
+(defun rails-test:print-summaries ()
+  "Print summary lines."
+  (let ((msg nil))
+    (with-current-buffer (get-buffer rails-script:buffer-name)
+      (save-excursion
+        (goto-char (point-min))
+        (while (re-search-forward rails-test:result-regexp (point-max) t)
+          (setq msg (cons (match-string-no-properties 1) msg)))))
+    (when msg
+      (message "%s" (strings-join " || " (reverse msg))))))
 
 (defun rails-test:print-progress (start end len)
   (let (content)
@@ -126,16 +127,31 @@
        '(rails-test-error
          rails-test-trace))
   (add-hook 'after-change-functions 'rails-test:print-progress nil t)
-  (add-hook 'rails-script:run-after-stop-hook 'rails-test:hide-rails-project-root t t)
-;;  (add-hook 'rails-script:run-after-stop-hook 'rails-test:scroll-of-buffer t t)
-  (add-hook 'rails-script:run-after-stop-hook 'rails-test:print-result t t)
+  (add-hook 'rails-script:after-hook-internal 'rails-test:run-after-hooks t t)
   (add-hook 'rails-script:show-buffer-hook 'rails-test:reset-point-and-height t t))
 
-;; (defun rails-test:scroll-of-buffer ()
-;;   (with-current-buffer "ROutput"
-;;     (buffer "ROutput")
-;;     (goto-char (point-min))
-;;     (scroll-down-nomark (count-lines (point-min) (point-max)))))
+(defcustom rails-test:run-after-hook '(rails-test:hide-rails-project-root
+                                       rails-test:print-summaries)
+  "Hooks ran after tests have run."
+  :group 'rails
+  :type 'hook)
+
+(defcustom rails-test:run-after-fail-hook '(rails-script:popup-buffer)
+  "Hooks ran after tests have run and any have failured or an error occured."
+  :group 'rails
+  :type 'hook)
+
+(defcustom rails-test:run-after-pass-hook nil
+  "Hooks ran after tests have run and any all passed."
+  :group 'rails
+  :type 'hook)
+
+(defun rails-test:run-after-hooks ()
+  (run-hooks 'rails-test:run-after-hook)
+  (if (or (not (zerop rails-script:output-mode-ret-value))
+          (> (rails-test:count-errors-failures) 0))
+    (run-hooks 'rails-test:run-after-fail-hook)
+    (run-hooks 'rails-test:run-after-pass-hook)))
 
 (defun rails-test:hide-rails-project-root ()
   "Show files that are relative to the project root as relative filenames
@@ -233,17 +249,17 @@ Used when it's determined that the output buffer needs to be shown."
 (defun rails-test:active-support-test-case-current-test ()
   (save-excursion
     (ruby-end-of-block)
-    (and (search-backward-regexp "^[ ]*test [\'\"]\\([a-z0-9_ ]+\\)[\'\"][ ]*do" nil t)
-         (match-string-no-properties 1))))
+    (and (search-backward-regexp "^[ \t]+test[ \t]+\\([\'\"]\\)\\(.*?\\)\\1[ \t]+do" nil t)
+         (match-string-no-properties 2))))
 
 (defun rails-test:run-current-method ()
   "Run a test for the current method."
   (interactive)
   (let ((file (substring (buffer-file-name) (length (rails-project:root))))
         (method (rails-core:current-method-name))
-        (description (or (rails-test:active-support-test-case-current-test) (rails-shoulda:current-test))))
+        (description (or (rails-shoulda:current-test) (rails-test:active-support-test-case-current-test))))
     (cond (description
-           (rails-test:run-single-file file (format "--name=/%s/" (replace-regexp-in-string "[\+\. \'\"\(\)]" "." description))))
+           (rails-test:run-single-file file (format "--name=/%s/" (replace-regexp-in-string "[^a-z0-9,-]" "." description))))
           (method
            (rails-test:run-single-file file (format "--name=%s" method))))))
 

@@ -170,7 +170,6 @@ Emacs w3m browser."
   :type 'integer)
 
 (defvar rails-version "0.5.99.6")
-(defvar rails-templates-list '("html.erb" "erb" "js.rjs" "builder" "rhtml" "rxml" "rjs" "haml" "liquid" "mab" "rtex" "prawn"))
 (defvar rails-use-another-define-key nil)
 (defvar rails-primary-switch-func nil)
 (defvar rails-secondary-switch-func nil)
@@ -229,6 +228,12 @@ Emacs w3m browser."
 
 (defcustom rails-grep-extensions '("builder" "erb" "haml" "liquid" "mab" "rake" "rb" "rhtml" "rjs" "rxml" "yml" "feature" "js" "html" "rtex" "prawn")
   "List of file extensions which grep searches."
+  :group 'rails
+  :type '(repeat string))
+
+(defcustom rails-templates-list
+  '("html.erb" "erb" "js.rjs" "rjs" "xml.builder" "builder" "rhtml" "rxml" "html.haml" "haml" "html.liquid" "liquid" "html.mad" "mab" "pdf.rtex" "rtex" "pdf.prawn" "prawn")
+  "List of view templates.  This first template is the default template."
   :group 'rails
   :type '(repeat string))
 
@@ -294,17 +299,17 @@ Emacs w3m browser."
                (file-exists-p rails-chm-file))
           (start-process "keyhh" "*keyhh*" "keyhh.exe" "-#klink"
                          (format "'%s'" item)  rails-chm-file)
-        (let ((buf (buffer-name)))
-          (unless (string= buf "*ri*")
-            (switch-to-buffer-other-window "*ri*"))
-          (setq buffer-read-only nil)
-          (kill-region (point-min) (point-max))
-          (message (concat "Please wait..."))
-          (call-process rails-ri-command nil "*ri*" t "-T" "-f" "ansi" item)
-;          (local-set-key [return] 'rails-search-doc) ; because this kicks in in text files. why? -mike
-          (ansi-color-apply-on-region (point-min) (point-max))
-          (setq buffer-read-only t)
-          (goto-char (point-min))))))
+          (with-current-buffer (get-buffer-create "*ri*")            
+            (setq buffer-read-only nil)
+            (erase-buffer)
+            (message (concat "Please wait..."))
+            (call-process rails-ri-command nil "*ri*" t "-T" "-f" "ansi" item)
+            (ansi-color-apply-on-region (point-min) (point-max))
+            (setq buffer-read-only t)
+            (goto-char (point-min))
+            (local-set-key "q" 'quit-window)
+            (local-set-key [f1] 'rails-search-doc)
+            (display-buffer (current-buffer))))))
 
 (defun rails-create-tags()
   "Create tags file"
@@ -494,33 +499,35 @@ necessary."
        (concat ".*\\(" (rails-core:regex-for-match-view)
                "\\|" (mapconcat #'car rails-auto-mode-alist "\\|")
                "\\|" (mapconcat (lambda (ext) (concat "\\." ext "$")) rails-refactoring-source-extensions "\\|")
-               "\\|\\.css$\\)"))
+               "\\|" (mapconcat (lambda (ext) (concat "\\." ext "$")) rails-grep-extensions "\\|")
+               "\\)"))
   (rails-features:install))
 
 ;; hooks
 
 (add-hook 'ruby-mode-hook
-          (lambda()
-            (require 'rails-ruby)
-            (require 'ruby-electric)
-            (ruby-electric-mode (or rails-enable-ruby-electric -1))
-            (ruby-hs-minor-mode t)
-            (imenu-add-to-menubar "IMENU")
-            (modify-syntax-entry ?! "w" (syntax-table))
-            (modify-syntax-entry ?: "w" (syntax-table))
-            (modify-syntax-entry ?_ "w" (syntax-table))
-            ;(local-set-key (kbd "C-.") 'complete-tag)
-            (if rails-indent-and-complete
-                (local-set-key (if rails-use-another-define-key
-                                   (kbd "TAB") (kbd "<tab>"))
-                               'indent-and-complete))
-            (local-set-key (rails-key "f") '(lambda()
-                                              (interactive)
-                                              (mouse-major-mode-menu (rails-core:menu-position))))
-            (local-set-key (kbd "C-:") 'ruby-toggle-string<>simbol)
-            (local-set-key (if rails-use-another-define-key
+          (lambda ()
+            (when (rails-project:root)
+              (require 'rails-ruby)
+              (require 'ruby-electric)
+              (ruby-electric-mode (or rails-enable-ruby-electric -1))
+              (ruby-hs-minor-mode t)
+              (imenu-add-to-menubar "IMENU")
+              (modify-syntax-entry ?! "w" (syntax-table))
+              (modify-syntax-entry ?: "w" (syntax-table))
+              (modify-syntax-entry ?_ "w" (syntax-table))
+              ;(local-set-key (kbd "C-.") 'complete-tag)
+              (if rails-indent-and-complete
+		(local-set-key (if rails-use-another-define-key
+                                 (kbd "TAB") (kbd "<tab>"))
+			       'indent-and-complete))
+              (local-set-key (rails-key "f") '(lambda()
+                                                (interactive)
+                                                (mouse-major-mode-menu (rails-core:menu-position))))
+              (local-set-key (kbd "C-:") 'ruby-toggle-string<>simbol)
+              (local-set-key (if rails-use-another-define-key
                                (kbd "RET") (kbd "<return>"))
-                           'ruby-newline-and-indent)))
+                             'ruby-newline-and-indent))))
 
 (add-hook 'speedbar-mode-hook
           (lambda()
