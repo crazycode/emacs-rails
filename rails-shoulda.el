@@ -23,15 +23,17 @@
 (defun rails-shoulda:current-test ()
   "Return the test name based on point"
   (save-excursion
-    (ruby-end-of-block)
-    (let* ((name-regex "\\(\\(:[a-z0-9_]+\\)\\|\\(\"\\([a-z0-9_ ]+\\)\"\\)\\)")
-           (name-match (lambda () (or (match-string-no-properties 2) (match-string-no-properties 4))))
-           (should (when (search-backward-regexp (concat "^[ \t]*should +" name-regex "[ \t]+do") nil t)
-                     (funcall name-match)))
-           (context (when (search-backward-regexp (concat "^[ \t]*context +" name-regex "[ \t]+do") nil t)
-                      (funcall name-match))))
-      (when (and should context)
-        (concat context " should " should)))))
+    (end-of-line)
+    (let ((context-re "[ \t]context \\(:[a-z0-9_]+\\|\"[a-z0-9_ ]+\"\\|'[a-z0-9_ ]+\\)[ \t]+do"))
+      (when (search-backward-regexp "^[ \t]*\\(context\\|should\\)" nil t)
+        (if (string= "context" (match-string-no-properties 1))
+          (and (search-forward-regexp context-re nil t)
+               (match-string-no-properties 1))
+          (let* ((should (and (search-forward-regexp "[ \t]\\(should.*?\\)\\([ \t]+do\\)?[ \t]*$" nil t)
+                              (match-string-no-properties 1)))
+                 (context (and (search-backward-regexp context-re nil t)
+                               (match-string-no-properties 1))))
+            (concat context " " should)))))))
 
 (defun rails-shoulda:current-context ()
   "Return the shoulda context name based on point"

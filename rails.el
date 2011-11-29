@@ -199,6 +199,7 @@ Emacs w3m browser."
     (:fixture          "test/fixtures/")
     (:lib              "lib")
     (:rspec-controller "spec/controllers")
+    (:rspec-controller "spec/requests")
     (:rspec-fixture    "spec/fixtures")
     (:rspec-lib        "spec/lib")
     (:rspec-model      "spec/models")
@@ -343,6 +344,12 @@ Emacs w3m browser."
   (interactive (progn (grep-compute-defaults)
                       (list (grep-read-regexp))))
   (rgrep regexp (mapconcat (lambda (ext) (format "*.%s" ext)) rails-grep-extensions " ") (rails-project:root)))
+
+(defun rails-shell ()
+  "Switch to the project inferior shell buffer."
+  (interactive)
+  (let ((default-directory (rails-project:root)))
+    (shell (get-buffer-create (concat "*rails-" (rails-project:name) "-shell*")))))
 
 ;;;;;;;;;; Database integration ;;;;;;;;;;
 
@@ -501,6 +508,8 @@ necessary."
                "\\|" (mapconcat (lambda (ext) (concat "\\." ext "$")) rails-refactoring-source-extensions "\\|")
                "\\|" (mapconcat (lambda (ext) (concat "\\." ext "$")) rails-grep-extensions "\\|")
                "\\)"))
+  (set (make-local-variable 'ffip-patterns)
+       (mapcar (lambda (ext) (concat "*." ext)) rails-grep-extensions))
   (rails-features:install))
 
 ;; hooks

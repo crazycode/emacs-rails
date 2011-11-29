@@ -31,8 +31,7 @@
     rails-rspec-feature)
   "List of features")
 (defcustom rails-features-enabled
-  '(rails-snippets-feature
-    rails-speedbar-feature)
+  '(rails-speedbar-feature)
   "List of enabled features.  NOTE: restart emacs to make changes take effect."
   :group 'rails
   :type '(repeat symbol))

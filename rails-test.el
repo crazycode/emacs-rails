@@ -33,6 +33,11 @@
   :type 'boolean
   :tag "Rails Quiet Tests")
 
+(defcustom rails-test:rake-test-all-task-name "test"
+  "Rake task name to run all tests."
+  :group 'rails
+  :type 'string)
+
 (defvar rails-test:history nil)
 
 
@@ -195,7 +200,7 @@ Used when it's determined that the output buffer needs to be shown."
     (add-to-list rails-test:history task))
   (let ((task-name
          (if (string= "all" task)
-             "test"
+             rails-test:rake-test-all-task-name
            (concat "test:" task))))
     (rails-rake:task task-name 'rails-test:compilation-mode (concat "test " task))))
 
@@ -259,9 +264,14 @@ Used when it's determined that the output buffer needs to be shown."
         (method (rails-core:current-method-name))
         (description (or (rails-shoulda:current-test) (rails-test:active-support-test-case-current-test))))
     (cond (description
-           (rails-test:run-single-file file (format "--name=/%s/" (replace-regexp-in-string "[^a-z0-9,-]" "." description))))
+           (rails-test:run-single-file file
+                                       (format "--name=/%s/"
+                                               (replace-regexp-in-string "^\\.\\|\\.$" ""
+                                                                         (replace-regexp-in-string "[^a-z0-9,-]+" "."
+                                                                                                   description)))))
           (method
-           (rails-test:run-single-file file (format "--name=%s" method))))))
+           (rails-test:run-single-file file
+                                       (format "--name=%s" method))))))
 
 ;; These functions were originally defined anonymously in ui. They are defined here so keys
 ;; can be added to them dryly

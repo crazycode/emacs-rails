@@ -40,7 +40,7 @@
   :tag "Rails Server Default")
 
 (defcustom rails-ws:default-server-type "mongrel"
-  "Web server to run Rails application."
+  "Web server to run Rails application (Rails version 1 and 2 only)."
   :group 'rails
   :type 'string
   :tag "Rails Server Type")
@@ -115,6 +115,11 @@ using `rails-default-environment'."
            (format "-p %s -e %s start"
                    port
                    env)))
+   ((file-exists-p (rails-core:file "script/rails"))
+    (list rails-ruby-command
+          (format "script/rails server -p %s -e %s"
+                  port
+                  env)))
    (t
     (list rails-ruby-command
           (format "script/server %s -p %s -e %s"

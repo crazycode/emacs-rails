@@ -37,6 +37,7 @@
     "test/functional"
     "test/fixtures"
     "spec/controllers"
+    "spec/requests"
     "spec/fixtures"
     "spec/lib"
     "spec/models"
@@ -330,8 +331,12 @@ CONTROLLER."
   "Return the controller spec file name for the controller named
 CONTROLLER."
   (when controller
-    (format "spec/controllers/%s_spec.rb"
-            (rails-core:file-by-class (rails-core:long-controller-name controller) t))))
+    (let ((existing (find-if #'file-exists-p (mapcar (lambda (pattern)
+                                                       (rails-core:file (format pattern
+                                                                                (rails-core:file-by-class controller t))))
+                                                     '("spec/requests/%s_spec.rb"
+                                                       "spec/controllers/%s_controller_spec.rb")))))
+      (if existing existing (rails-core:file (format "spec/controllers/%s_controller_spec.rb" (rails-core:file-by-class controller t)))))))
 
 (defun rails-core:lib-file (lib-name)
   "Return the model file from the lib name."
@@ -637,6 +642,65 @@ If the action is nil, return all views for the controller."
     (when (string-match "db\\/migrate\\/\\([0-9]+\\)[a-z0-9_]+\.[a-z]+$" name)
       (match-string 1 name))))
 
+(defun rails-core:grep-from-file (file regexp replacement)
+  (and file
+       (file-exists-p file)
+       (with-temp-buffer
+         (insert-file-contents file)
+         (goto-char (point-min))
+         (and (re-search-forward regexp nil t)
+              (match-substitute-replacement replacement)))))
+
+(defun rails-core:grep-from-runner (stmt regexp replacement)
+  (and (rails-core:file "script/runner")
+       (with-temp-buffer
+         (let ((default-directory (rails-project:root)))
+           (shell-command (concat rails-ruby-command " script/runner '" stmt "'")
+                          (current-buffer)
+                          nil)
+           (goto-char (point-min))
+           (and (re-search-forward regexp)
+                (match-substitute-replacement replacement))))))
+
+(defun rails-core:current-rails-version ()
+  "Return the rails version of the current project"
+  (let* ((version-rb-re (concat "MAJOR[[:space:]]+=[[:space:]]+\\([[:digit:]]+\\)"
+                                "[[:space:]]+MINOR[[:space:]]+=[[:space:]]\\([[:digit:]]+\\)"
+                                "[[:space:]]+TINY[[:space:]]+=[[:space:]]\\([[:digit:]]+\\)"))
+         (fns
+          (list
+           (lambda ()
+             (rails-core:grep-from-file (rails-core:file "Gemfile")
+                                        "^gem[[:space:]]+\\(['\"]\\)rails\\1,[[:space:]]+\\1\\(.*?\\)\\1"
+                                        "\\2"))
+           (lambda ()
+             (rails-core:grep-from-file (rails-core:file "config/environment.rb")
+                                        "^RAILS_GEM_VERSION[[:space:]]+=[[:space:]]\\(['\"]\\)\\(.*?\\)\\1"
+                                        "\\2"))
+           (lambda ()
+             (rails-core:grep-from-file (rails-core:file "vendor/rails/railties/lib/rails/version.rb")
+                                        version-rb-re
+                                        "\\1.\\2.\\3"))
+           (lambda ()
+             (rails-core:grep-from-file (rails-core:file "vendor/rails/railties/lib/rails_version.rb")
+                                        version-rb-re
+                                        "\\1.\\2.\\3"))
+           (lambda ()
+             (rails-core:grep-from-runner "puts Rails::VERSION::STRING"
+                                          "^[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+$"
+                                          "\\&"))))
+         (version nil))
+    (while (and (not version) fns)
+      (setq version (funcall (car fns))
+            fns (cdr fns)))
+    version))
+
+(defun rails-core:current-rails-major-version ()
+  "Return project major version of rails."
+  (let ((version (rails-core:current-rails-version)))
+    (when (string-match "^[0-9]+" version)
+      (string-to-number (match-string 0 version)))))
+
 ;;;;;;;;;; Determination of buffer type ;;;;;;;;;;
 
 (defun rails-core:buffer-file-match (regexp)
@@ -718,7 +782,9 @@ the Rails minor mode log."
   (let* ((prompt (car (car (cdr menu))))
          (mappings (cdr (car (cdr menu))))
          (choices (delete-if #'not (mapcar (lambda (item) (car item)) mappings)))
-         (result (ido-completing-read prompt choices)))
+         (default (if (find-if (lambda (val) (string= (word-at-point) val)) choices)
+                    (word-at-point)))
+         (result (ido-completing-read prompt choices nil nil default)))
     (or (cdr (assoc result mappings)) result)))
 
 (defun rails-core:menu (menu)

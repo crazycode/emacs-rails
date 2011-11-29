@@ -24,14 +24,14 @@
 ;; along with this program; if not, write to the Free Software
 ;; Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-(defvar rails-spec:all-files "./spec"
+(defvar rails-spec:all-files "spec"
   "All spec files/directories in project")
 
-(defvar rails-spec:runner "./script/spec"
-  "Command, that run specs.")
-
-(defvar rails-spec:runner-options ""
-  "Options to spec command.")
+(defun rails-spec:runner ()
+  "Command, that run specs."
+  (if (file-exists-p (rails-core:file "script/spec"))
+    (rails-core:file "script/spec")
+    "rspec"))
 
 (defvar rails-spec:last-run nil
   "Spec and arguments of last run.")
@@ -39,26 +39,23 @@
 (defun rails-spec:run (files &optional options)
   "Rerun previous spec run."
   (setf rails-spec:last-run (cons files options))
-  (let ((default-process-coding-system '(utf-8 . utf-8)))
-    (rails-project:compile-in-root
-     (concat rails-spec:runner " "
-             rails-spec:runner-options " "
-             options " "
-             files))))
+  (rails-script:run (rails-spec:runner)
+                    (list options files)
+                    'rails-test:compilation-mode))
 
 (defun rails-spec:run-current ()
   "Run spec for the current controller/model/mailer."
   (interactive)
   (let* ((type (rails-core:buffer-type))
          (spec (cond
-                 ((find type '(:model :mailer :rspec-fixture))
-                  (rails-core:rspec-model-file (rails-core:current-model)))
-                 ((find type '(:controller :helper :view))
-                  (rails-core:rspec-controller-file (rails-core:current-controller)))
-                 ((find type '(:rspec-model :rspec-controller :rspec-lib))
-                  (buffer-file-name))
-                 ((eql type :lib)
-                  (rails-core:rspec-lib-file (rails-core:current-lib))))))
+                ((find type '(:model :mailer :rspec-fixture))
+                 (rails-core:rspec-model-file (rails-core:current-model)))
+                ((find type '(:controller :helper :view))
+                 (rails-core:rspec-controller-file (rails-core:current-controller)))
+                ((find type '(:rspec-model :rspec-controller :rspec-lib))
+                 (buffer-file-name))
+                ((eql type :lib)
+                 (rails-core:rspec-lib-file (rails-core:current-lib))))))
     (if spec
       (rails-spec:run spec)
       (message "No spec found for %s" (buffer-file-name)))))
@@ -66,7 +63,7 @@
 (defun rails-spec:run-all ()
   "Run spec for all files in project (rails-spec:all-files variable)"
   (interactive)
-  (rails-spec:run rails-spec:all-files))
+  (rails-spec:run (rails-core:file rails-spec:all-files)))
 
 (defun rails-spec:run-last ()
   "Rerun previous spec run."

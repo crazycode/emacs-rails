@@ -329,6 +329,7 @@
 
   ;; Other
   ((rails-key "s")       'rails-grep-project)
+  ((rails-key "C-M-z")   'rails-shell)
   ([f9]                  'rails-scm-status-into-root))
 
 ;; Global keys and menubar

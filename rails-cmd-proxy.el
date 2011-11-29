@@ -148,7 +148,8 @@ otherwise if set REVERSE convert from remote to local."
 
 (defun ansi-color-insertion-filter (proc string)
   (with-current-buffer (process-buffer proc)
-    (let ((moving (= (point) (process-mark proc))))
+    (let ((buffer-read-only nil)
+          (moving (= (point) (process-mark proc))))
       (save-excursion
         ;; Insert the text, advancing the process marker.
         (goto-char (process-mark proc))
